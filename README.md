@@ -34,8 +34,8 @@ finance-data-pipeline/
 ├── .gitignore                  # Ignore unnecessary files
 ├── README.md                   # Project documentation
 ```
-## **Contact Me:**
-Colby Reichenbach
-[colbyrreichenabch@gmail.com](mailto:colbyrreichenbach@gmail.com)
-[Linkedin](https://www.linkedin.com/in/colby-reichenbach/)
+## **Contact Me:**  
+Colby Reichenbach  
+[colbyrreichenabch@gmail.com](mailto:colbyrreichenbach@gmail.com)  
+[Linkedin](https://www.linkedin.com/in/colby-reichenbach/)  
 
