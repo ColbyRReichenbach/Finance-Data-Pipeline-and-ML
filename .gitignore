@@ -1,0 +1,23 @@
+# Ignore database
+sql_finance_project.db
+*.db
+
+# Ignore Python cache & compiled files
+__pycache__/
+*.pyc
+*.pyo
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore virtual environments
+venv/
+env/
+
+# Ignore system files (Mac/Windows)
+.DS_Store
+Thumbs.db
+
+# Ignore logs & temp files
+*.log
+*.tmp
