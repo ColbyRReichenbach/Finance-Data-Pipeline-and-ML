@@ -3,12 +3,12 @@
 A Python-based financial data pipeline for fetching, storing, and analyzing **historical & live stock data**.
 
 ## Features 
-- Fetch **historical** and **live** stock data from Yahoo Finance.
+- Fetch **historical** and **live** data from Yahoo Finance.
 - Store data in an **SQLite database** for easy analysis.
 - **Machine Learning models** for:
   - **Anomaly Detection** (detect unusual stock movements).
   - **Stock Price Prediction** (forecast stock trends).
-- Real-time **sector and index analysis**.
+- Real-time **sector, stock and index analysis**.
 
 ---
 
