@@ -16,23 +16,25 @@ A Python-based financial data pipeline for fetching, storing, and analyzing **hi
 
 ```bash
 finance-data-pipeline/
-├── fetch/                    # Data fetching scripts
-│   ├── fetch_historical_data.py  # Fetch historical stock data
-│   ├── fetch_live_data.py        # Fetch live stock data
-├── store/                    # Data storage scripts
-│   ├── store_historical_data.py  # Store historical stock data
-│   ├── store_live_data.py        # Store live stock data
-├── ml_models/                # Machine Learning models
-│   ├── anomaly_detection.py      # Detect stock anomalies
-│   ├── stock_prediction.py       # Predict stock prices
-├── scripts/                  # Utility scripts
-│   ├── setup_database.py         # Create the SQLite database
-│   ├── run_historical_data.py    # Run historical data pipeline
-│   ├── run_live_data.py          # Run live data pipeline
-├── config.py                  # Config settings (API keys, database paths)
-├── requirements.txt            # Python dependencies
-├── .gitignore                  # Ignore unnecessary files
-├── README.md                   # Project documentation
+│── fetch/                 # Fetch scripts (historical, live, metadata, fundamentals)
+│── store/                 # Store scripts for DB insertion
+│── analytics/             # Data analysis scripts
+│── charts/                # Visualization scripts
+│── dashboard/             # Dashboard (Streamlit/Plotly)
+│── config/                # Config files (constants, DB paths, etc.)
+│── tests/                 # Test scripts for fetch/store functions
+│── docs/                  # Documentation (README, guides, etc.)
+│── scripts/               # Utility scripts (setup, reset DB, cron jobs, etc.)
+│── data/                  # Store sample data files (CSV, JSON, etc.)
+│── models/                # ML models (forecasts, anomaly detection)
+│── notebooks/             # Jupyter notebooks for exploratory analysis
+│── .gitignore             # Ignore unnecessary files
+│── requirements.txt       # Required Python libraries
+│── setup.py               # Installation setup (if making package)
+│── LICENSE                # Open-source or private license
+│── README.md              # Project description & setup instructions
+│── sql_finance_project.db  # SQLite DB
+
 ```
 ## **Contact Me:**  
 Colby Reichenbach  
