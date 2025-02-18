@@ -1,15 +1,17 @@
-
 import os
 import sys
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from dashboard.analytics import (compute_moving_averages,compute_rsi, compute_correlation, compute_macd,
+                                 compute_bollinger_bands)
+
+from config.constants import SECTOR_ETFS
 
 # 🚀 Ensure Python finds 'config' and other modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from config.db_utils import get_db_connection
-from analytics import compute_moving_averages, compute_rsi, compute_macd, compute_bollinger_bands, detect_anomalies
 
 # 🏗️ Page Configuration
 st.set_page_config(
@@ -30,7 +32,7 @@ st.markdown("""
 
 # 🎯 Fetch Data Functions
 def get_live_data(table_name, group_by_col):
-    """Fetch the most recent entry per sector or stock from live data tables."""
+    """Fetch the most recent entry per sector or stock from live data tables, removing unwanted columns."""
     conn = get_db_connection()
     query = f"""
         SELECT * FROM {table_name} AS t1
@@ -40,14 +42,14 @@ def get_live_data(table_name, group_by_col):
     conn.close()
 
     # 🔥 Remove unnecessary columns
-    columns_to_remove = ["id", "datetime"]
+    columns_to_remove = ["id", "datetime"]  # ✅ Customize this list
     df = df.drop(columns=[col for col in columns_to_remove if col in df.columns], errors="ignore")
 
     return df
 
 
+# ✅ Fetch Live Stock Data with Sector Information
 def get_live_stock_data():
-    """Fetch live stock data and join with sector information."""
     conn = get_db_connection()
     query = """
         SELECT live_stocks.*, stock_metadata.sector
@@ -59,8 +61,18 @@ def get_live_stock_data():
     return df
 
 
+def get_historical_data(ticker):
+    """Fetch historical stock data"""
+    conn = get_db_connection()
+    query = f"SELECT * FROM historical_stocks WHERE ticker = '{ticker}' ORDER BY date DESC LIMIT 500"
+    df = pd.read_sql(query, conn)
+    conn.close()
+    return df
+
+
+# ✅ Get Sector and Stock Metadata
 def get_sector_list():
-    """Fetch unique sectors from stock metadata."""
+    """Fetch unique sectors"""
     conn = get_db_connection()
     query = "SELECT DISTINCT sector FROM stock_metadata"
     df = pd.read_sql(query, conn)
@@ -69,7 +81,7 @@ def get_sector_list():
 
 
 def get_stock_metadata():
-    """Fetch stock tickers with corresponding sectors."""
+    """Fetch stock tickers with corresponding sectors"""
     conn = get_db_connection()
     query = "SELECT ticker, sector FROM stock_metadata"
     df = pd.read_sql(query, conn)
@@ -103,7 +115,7 @@ view_option = st.sidebar.selectbox("Choose Data View", ["Live Market", "Forecast
 
 # 📊 **Left Panel - Sector & Stock Tables**
 st.sidebar.subheader("📊 Live Sector Performance")
-live_sectors = get_live_data("live_sectors", "sector")
+live_sectors = get_live_data("live_sectors", "sector")  # Fetch only the latest entry per sector
 st.sidebar.dataframe(live_sectors)
 
 st.sidebar.subheader("📈 Live Stock Performance")
@@ -113,44 +125,70 @@ live_stocks = get_live_stock_data()
 latest_stocks = live_stocks.sort_values(by="datetime", ascending=False).drop_duplicates(subset=["ticker"])
 st.sidebar.dataframe(latest_stocks)
 
-# 📈 **Main Panel - Stock Chart with Indicators**
+# 📈 **Main Panel - Stock Chart & Trading Volume**
 st.title(f"📊 {selected_stock} Performance Overview")
 
-col1, col2 = st.columns(2)
+col1, col2, = st.columns(2)
 
 with col1:
-    st.subheader("📈 Stock Price Movement with Indicators")
+    st.subheader("📈 Stock Price Movement (30D & 90D MA)")
 
-    # 🔥 Fetch Stock Data with Indicators
-    stock_data = compute_moving_averages(selected_stock)
-    stock_data = compute_bollinger_bands(selected_stock)
-    stock_data["date"] = pd.to_datetime(stock_data["date"], utc=True)
+    stock_data = get_historical_data(selected_stock)
+    stock_data["date"] = pd.to_datetime(stock_data["date"])
+    stock_data["30D MA"] = stock_data["close_price"].rolling(window=30).mean()
+    stock_data["90D MA"] = stock_data["close_price"].rolling(window=90).mean()
 
     fig_stock = px.line(
-        stock_data, x="date", y=["close_price", "Upper_Band", "Lower_Band"],
+        stock_data, x="date", y=["close_price", "30D MA", "90D MA"],
         labels={"date": "Date", "close": "Stock Price"},
-        title=f"{selected_stock} Price with Moving Averages & Bollinger Bands",
+        title=f"{selected_stock} Stock Price with Moving Averages",
         template="plotly_dark"
     )
     st.plotly_chart(fig_stock, use_container_width=True)
 
 with col2:
-    st.subheader("📊 RSI & MACD Indicators")
+    st.subheader("📊 Trading Volume")
+
+    fig_volume = px.bar(
+        stock_data, x="date", y="volume",
+        title=f"{selected_stock} Trading Volume",
+        labels={"date": "Date", "volume": "Volume"},
+        template="plotly_dark"
+    )
+    st.plotly_chart(fig_volume, use_container_width=True)
+
+# 📈 **Bottom Panel - Top Movers**
+st.subheader(f"📊 RSI & MACD Indicators for {selected_stock}")
+
+col3, col4 = st.columns(2)
+
+with col3:
+    st.subheader("📈 Relative Strength Index (RSI) - Last 6 Months")
 
     rsi_data = compute_rsi(selected_stock)
+    rsi_data = rsi_data[rsi_data["date"] >= (pd.Timestamp.now(tz="UTC") - pd.DateOffset(months=6))]
+
+    fig_rsi = px.line(
+        rsi_data, x="date", y="RSI",
+        title=f"RSI for {selected_stock} (Last 6 Months)",
+        labels={"date": "Date", "RSI": "Relative Strength Index"},
+        template="plotly_dark"
+    )
+    st.plotly_chart(fig_rsi, use_container_width=True)
+
+with col4:
+    st.subheader("📈 MACD Indicator - Last 2 Years")
+
     macd_data = compute_macd(selected_stock)
+    macd_data = macd_data[macd_data["date"] >= (pd.Timestamp.now(tz="UTC") - pd.DateOffset(years=2))]
 
-    if rsi_data is not None:
-        fig_rsi = px.line(rsi_data, x="date", y="RSI", title="Relative Strength Index (RSI)", template="plotly_dark")
-        st.plotly_chart(fig_rsi, use_container_width=True)
-    else:
-        st.warning(f"⚠️ No RSI data available for {selected_stock}")
-
-    if macd_data is not None:
-        fig_macd = px.line(macd_data, x="date", y=["MACD", "Signal_Line"], title="MACD Indicator", template="plotly_dark")
-        st.plotly_chart(fig_macd, use_container_width=True)
-    else:
-        st.warning(f"⚠️ No MACD data available for {selected_stock}")
+    fig_macd = px.line(
+        macd_data, x="date", y=["MACD", "Signal_Line"],
+        title=f"MACD for {selected_stock} (Last 2 Years)",
+        labels={"date": "Date", "MACD": "MACD Value"},
+        template="plotly_dark"
+    )
+    st.plotly_chart(fig_macd, use_container_width=True)
 
 # 🚀 Forecasting & Anomaly Detection Panel
 if view_option == "Forecast & Anomaly Detection":
@@ -175,11 +213,11 @@ if view_option == "Forecast & Anomaly Detection":
     with col2:
         st.subheader("🚨 Anomaly Detection Alerts")
 
-        anomalies = detect_anomalies(selected_stock)
-        if anomalies is not None and not anomalies.empty:
-            st.dataframe(anomalies[["date", "close_price", "volume", "Price_Anomaly", "Volume_Anomaly"]])
-        else:
-            st.write("✅ No significant anomalies detected.")
+        # 🔥 Placeholder for ML Anomaly Detection (To Be Implemented)
+        # anomalies = get_anomalies(selected_stock)
+        # st.dataframe(anomalies)
+
+        st.write("⚠️ *Anomaly detection will highlight unusual market behavior.*")
 
 # 🎯 Final Notes
 st.sidebar.markdown("---")
